@@ -3,709 +3,1011 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Apartment Manager</title>
+    <title>Property Manager - Premium</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-100 text-slate-900 selection:bg-indigo-500 selection:text-white">
 <div id="root"></div>
 
 <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    const Icons = {
-        Layout: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>,
-        Search: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>,
-        Home: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
-        Plus: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>,
-        Image: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>,
-        File: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>,
-        Trash: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>,
-        Lock: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>,
-        Wrench: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
-        TrendingUp: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-        Camera: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+    const translations = {
+        tr: {
+            title: "Property Manager",
+            searchPlaceholder: "Site Ara...",
+            generalPortfolio: "Genel Portföy",
+            sitesProperties: "SİTELER VE MÜLKLER",
+            portfolioStatus: "Genel Portföy Durumu",
+            portfolioSub: "Yönetmek istediğiniz siteyi sol menüden seçin.",
+            noCommunity: "Kayıtlı Site Bulunmuyor",
+            noCommunitySub: "Başlamak için sol taraftan ilk sitenizi ekleyin.",
+            units: "Daire / Ünite",
+            totalExpense: "Toplam Harcama",
+            aptsAndOrders: "Daireler ve Mevcut İş Emirleri",
+            addAptTitle: "Yeni Daire Ekle",
+            aptNoPlaceholder: "Daire Adı/No (Örn: A2, Dükkan 1)",
+            addBtn: "Ekle",
+            noItems: "Kayıtlı iş emri veya fatura yok",
+            detailsAndOrder: "Detaylar ve Kayıt Ekle →",
+            workOrders: "İş Emri",
+            total: "Toplam Maliyet",
+            todo: "Yapılacak",
+            inProgress: "Devam Ediyor",
+            complete: "Tamamlandı",
+            saveOrder: "İş Emrini Kaydet",
+            updateOrder: "İş Emrini Güncelle",
+            cancelEdit: "İptal",
+            documentScanner: "Belge Tarayıcı",
+            cancel: "İptal Et",
+            takePhoto: "Fotoğrafı Çek",
+            googleLogin: "Google ile Giriş Yap",
+            siteNamePlaceholder: "Yeni Site Adı Yazın...",
+            confirmDelComm: "Bu siteyi ve içindeki TÜM daireleri silmek istediğinize emin misiniz?",
+            confirmDelApt: "Bu daireyi ve TÜM kayıtları silmek istediğinize emin misiniz?",
+            confirmDelItem: "Bu iş emrini (ve S3'teki tüm dosyalarını) silmek istediğinize emin misiniz?",
+            delError: "Silme işlemi başarısız oldu. Sunucu bağlantısını kontrol edin.",
+            category: "Kategori",
+            jobTitle: "İşlem Başlığı / Alınan Eşya",
+            price: "Tutar ($)",
+            dateTime: "Tarih ve Saat",
+            catGeneral: "Genel Bakım",
+            catAppliance: "Beyaz Eşya",
+            catPlumbing: "Tesisat",
+            catElectrical: "Elektrik",
+            catFlooring: "Zemin Tamiri",
+            catHVAC: "Klima / Isıtma",
+            catOther: "Diğer",
+            descPlaceholder: "Sorunu, yapılan işlemi veya notlarınızı detaylıca yazın...",
+            attachments: "Ekli Dosyalar ve Belgeler",
+            uploadFile: "Dosya Yükle",
+            scanDoc: "Kameradan Tara",
+            notes: "Notlar ve Detaylı Açıklama",
+            maxFileLimitMsg: "En fazla 6 dosya yükleyebilirsiniz.",
+            maxSizeLimitMsg: "Her dosya en fazla 15MB olmalıdır.",
+            fileLimitsInfo: "Maksimum 6 Dosya • Her biri Max 15MB (PDF, PNG, JPG, MP4)",
+            activeUnitsTitle: "Aktif Daire Özeti",
+            activeUnitsSub: "İşlem görmüş tüm dairelerin genel durumu ve arama tablosu.",
+            searchActiveUnits: "Tabloda Daire veya Site ara...",
+            communityHeader: "Site",
+            unitHeader: "Daire",
+            recordsHeader: "Kayıtlar",
+            goToApt: "Git →"
+        },
+        en: {
+            title: "Property Manager",
+            searchPlaceholder: "Search Site...",
+            generalPortfolio: "General Portfolio",
+            sitesProperties: "SITES / PROPERTIES",
+            portfolioStatus: "Global Portfolio Overview",
+            portfolioSub: "Select the site you want to manage from the left menu.",
+            noCommunity: "No Registered Sites",
+            noCommunitySub: "Add your first site from the left menu to begin.",
+            units: "Units",
+            totalExpense: "Total Expense",
+            aptsAndOrders: "Apartments & Work Orders",
+            addAptTitle: "Add New Apartment",
+            aptNoPlaceholder: "Apt Name/No (e.g., A2, Shop 1)",
+            addBtn: "Add",
+            noItems: "No repairs/invoices recorded",
+            detailsAndOrder: "Details & Add Record →",
+            workOrders: "Work Orders",
+            total: "Total",
+            todo: "Todo",
+            inProgress: "In Progress",
+            complete: "Complete",
+            saveOrder: "Save Work Order",
+            updateOrder: "Update Work Order",
+            cancelEdit: "Cancel",
+            documentScanner: "Document Scanner",
+            cancel: "Cancel",
+            takePhoto: "Take Photo",
+            googleLogin: "Sign in with Google",
+            siteNamePlaceholder: "New Site Name...",
+            confirmDelComm: "Are you sure you want to delete this community and ALL its apartments?",
+            confirmDelApt: "Are you sure you want to delete this apartment and ALL its work orders?",
+            confirmDelItem: "Are you sure you want to delete this work order and its S3 files?",
+            delError: "Failed to delete. Check server connection.",
+            category: "Category",
+            jobTitle: "Repair / Item Bought",
+            price: "Price ($)",
+            dateTime: "Date & Time",
+            catGeneral: "General Maintenance",
+            catAppliance: "Appliance (Fridge, etc.)",
+            catPlumbing: "Plumbing",
+            catElectrical: "Electrical",
+            catFlooring: "Floor Repair",
+            catHVAC: "HVAC / AC",
+            catOther: "Other",
+            descPlaceholder: "Describe the issue or required work here...",
+            attachments: "Attachments",
+            uploadFile: "Upload File",
+            scanDoc: "Scan Document",
+            notes: "Notes & Description",
+            maxFileLimitMsg: "You can upload a maximum of 6 files.",
+            maxSizeLimitMsg: "Each file must be less than 15MB.",
+            fileLimitsInfo: "Max 6 Files • 15MB each (PDF, PNG, MP4)",
+            activeUnitsTitle: "Active Units Dashboard",
+            activeUnitsSub: "Overview of all units with active records across all sites.",
+            searchActiveUnits: "Search table for unit or site...",
+            communityHeader: "Community",
+            unitHeader: "Unit",
+            recordsHeader: "Records",
+            goToApt: "Go →"
+        }
     };
 
+    const Icons = {
+        Layout: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>,
+        Search: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>,
+        Home: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
+        Plus: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>,
+        Image: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>,
+        File: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>,
+        Video: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect width="15" height="14" x="1" y="5" rx="2" ry="2"/></svg>,
+        Lock: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>,
+        Camera: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
+        ArrowLeft: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+        Trash: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>,
+        Edit: ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+    };
+
+    const MAX_FILES = 6;
+    const MAX_FILE_SIZE_MB = 15;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
     const App = () => {
+        const [lang, setLang] = useState(() => {
+            const savedLang = localStorage.getItem('appLanguage');
+            if (savedLang) return savedLang;
+            const browserLang = navigator.language || navigator.userLanguage;
+            return (browserLang && browserLang.startsWith('tr')) ? 'tr' : 'en';
+        });
+
+        const t = (key) => translations[lang][key] || key;
+        const changeLanguage = (newLang) => { setLang(newLang); localStorage.setItem('appLanguage', newLang); };
+
         const [currentUser, setCurrentUser] = useState(() => {
             const savedUser = sessionStorage.getItem('activeUser');
             return savedUser ? JSON.parse(savedUser) : null;
         });
 
-        const [isAuthenticated, setIsAuthenticated] = useState(() => {
-            return sessionStorage.getItem('isAuthSession') === 'true';
-        });
+        const [isAuthenticated, setIsAuthenticated] = useState(() => sessionStorage.getItem('isAuthSession') === 'true');
+        const [communities, setCommunities] = useState([]);
+        const [selectedCommunityId, setSelectedCommunityId] = useState(null);
+        const [selectedApartmentId, setSelectedApartmentId] = useState(null);
 
-        const [apartments, setApartments] = useState([]);
+        const [newCommunityName, setNewCommunityName] = useState('');
         const [newAptName, setNewAptName] = useState('');
-        const [selectedId, setSelectedId] = useState(null);
-        const [searchTerm, setSearchTerm] = useState('');
 
-        // Updated state initialization to handle File objects instead of empty strings for images
-        const [form, setForm] = useState({ title: '', price: '', productImage: null, invoiceImage: null, notes: '', tarih: '', status: 'Todo' });
+        // Search states
+        const [searchTerm, setSearchTerm] = useState(''); // Sidebar search
+        const [dashboardSearch, setDashboardSearch] = useState(''); // New Dashboard search
 
         const [showCameraModal, setShowCameraModal] = useState(false);
         const [cameraStream, setCameraStream] = useState(null);
         const videoRef = useRef(null);
 
-        const idleTimeoutRef = useRef(null);
-        const IDLE_TIME_LIMIT = 10 * 60 * 1000;
+        const [workOrderCategory, setWorkOrderCategory] = useState("General Maintenance");
+        const [workOrderTitle, setWorkOrderTitle] = useState("");
+        const [workOrderPrice, setWorkOrderPrice] = useState("");
+        const [workOrderDate, setWorkOrderDate] = useState("");
+        const [workOrderNotes, setWorkOrderNotes] = useState("");
+        const [workOrderStatus, setWorkOrderStatus] = useState("Todo");
+
+        const [uploadedFiles, setUploadedFiles] = useState([]);
+        const [previewFile, setPreviewFile] = useState(null);
+        const [editingItemId, setEditingItemId] = useState(null);
+
+        // URL içindeki problemli karakterleri Tomcat için güvenli hale getirir
+        const getSafeUrl = (url) => {
+            if (!url || typeof url !== 'string') return url;
+            if (url.includes('?key=')) {
+                const parts = url.split('?key=');
+                return parts[0] + '?key=' + encodeURIComponent(parts[1]);
+            }
+            return url;
+        };
+        useEffect(() => {
+            if (selectedApartmentId) {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                setWorkOrderDate(now.toISOString().slice(0, 16));
+            }
+        }, [selectedApartmentId]);
+
+        useEffect(() => {
+            fetch('/api/auth/me')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.isAuthenticated) {
+                        setIsAuthenticated(true);
+                        setCurrentUser({
+                            name: data.name,
+                            email: data.email,
+                            picture: data.picture
+                        });
+                    } else {
+                        setIsAuthenticated(false);
+                    }
+                })
+            .catch(err => setIsAuthenticated(false));
+        }, []);
+
+        useEffect(() => {
+            if (isAuthenticated) {
+                fetch('/api/communities')
+                    .then(res => {
+                        if (!res.ok) throw new Error("Failed to fetch data");
+                        return res.json();
+                    })
+                    .then(data => setCommunities(data || []))
+                    .catch(err => console.error("Error loading portfolio:", err));
+            }
+        }, [isAuthenticated]);
+
+        const handleGoogleLogin = () => window.location.href = '/oauth2/authorization/google';
 
         const handleLogout = () => {
             setIsAuthenticated(false);
             setCurrentUser(null);
             sessionStorage.removeItem('isAuthSession');
             sessionStorage.removeItem('activeUser');
-            if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
             stopCamera();
+            window.location.href = '/logout';
         };
 
-        useEffect(() => {
-            if (isAuthenticated) {
-                sessionStorage.setItem('isAuthSession', 'true');
-                sessionStorage.setItem('activeUser', JSON.stringify(currentUser));
-
-                fetch('/api/apartments')
-                    .then(res => {
-                        if (res.ok) return res.json();
-                        console.warn("Backend not running yet, using empty array.");
-                        return [];
-                    })
-                    .then(data => setApartments(data))
-                    .catch(err => console.error("Error fetching data:", err));
-            } else {
-                sessionStorage.removeItem('isAuthSession');
-                sessionStorage.removeItem('activeUser');
-            }
-        }, [isAuthenticated, currentUser]);
-
-        useEffect(() => {
-            if (!isAuthenticated) return;
-            const resetIdleTimer = () => {
-                if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
-                idleTimeoutRef.current = setTimeout(() => {
-                    alert('Session expired for your security.');
-                    handleLogout();
-                }, IDLE_TIME_LIMIT);
-            };
-            const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-            events.forEach(e => window.addEventListener(e, resetIdleTimer));
-            resetIdleTimer();
-            return () => {
-                if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
-                events.forEach(e => window.removeEventListener(e, resetIdleTimer));
-            };
-        }, [isAuthenticated]);
-
-        useEffect(() => {
-            if (showCameraModal && cameraStream && videoRef.current) {
-                videoRef.current.srcObject = cameraStream;
-            }
-        }, [showCameraModal, cameraStream]);
-
-        const handleGoogleLogin = () => {
-            const mockGoogleUser = {
-                name: "Admin Manager",
-                email: "admin@apartmentmanager.com",
-                avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-            };
-            setCurrentUser(mockGoogleUser);
-            setIsAuthenticated(true);
-            setSelectedId(null);
+        const handleAddCommunity = (e) => {
+            e.preventDefault();
+            const name = newCommunityName.trim();
+            if (!name) return;
+            fetch('/api/communities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, apartments: [] })
+            }).then(res => res.json()).then(savedComm => {
+                setCommunities(prev => [...prev, savedComm]);
+                setNewCommunityName('');
+                setSelectedCommunityId(savedComm.id);
+                setSelectedApartmentId(null);
+            }).catch(err => alert("Error adding site."));
         };
 
         const handleAddApartment = (e) => {
             e.preventDefault();
             const name = newAptName.trim();
-            if (!name) return;
-            if (apartments.some(apt => apt.id.toLowerCase() === name.toLowerCase())) {
-                alert('This apartment already exists!');
+            if (!name || !selectedCommunityId) return;
+
+            const community = communities.find(c => c.id === selectedCommunityId);
+            if (community && community.apartments && community.apartments.some(a => a.id.toLowerCase() === name.toLowerCase())) {
+                alert(lang === 'tr' ? "Bu isimde bir ünite zaten kayıtlı!" : "A unit with this name is already registered!");
                 return;
             }
 
-            const newApt = { id: name, items: [] };
-
-            fetch('/api/apartments', {
+            fetch(`/api/communities/${selectedCommunityId}/apartments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newApt)
-            }).then(() => {
-                setApartments(prev => [...prev, newApt]);
+                body: JSON.stringify({ id: name, items: [] })
+            }).then(res => {
+                if (!res.ok) throw new Error("Duplicate");
+                return res.json();
+            }).then(savedApt => {
+                setCommunities(prev => prev.map(c => c.id === selectedCommunityId ? { ...c, apartments: [...(c.apartments || []), savedApt] } : c));
                 setNewAptName('');
-                setSelectedId(name);
-            }).catch(err => {
-                console.error(err);
-                alert("Failed to save to database. Make sure backend is running.");
-            });
+            }).catch(err => alert(lang === 'tr' ? "Bu isimde bir ünite zaten sistemde mevcut." : "A unit with this name already exists in the system."));
         };
 
-        const deleteApartment = (id, e) => {
+        const deleteCommunity = async (e, id) => {
             e.stopPropagation();
-            if (window.confirm(`Are you sure you want to delete apartment "${id}"?`)) {
-                fetch(`/api/apartments/${id}`, { method: 'DELETE' })
-                .then(response => {
-                    if (response.ok) {
-                        setApartments(prev => prev.filter(apt => apt.id !== id));
-                        if (selectedId === id) setSelectedId(null);
-                    } else {
-                        alert("Database'den silinemedi, sunucu hatası.");
-                    }
-                }).catch(err => {
-                    console.error("Failed to delete", err);
-                    alert("Sunucuya bağlanılamadı.");
-                });
+            if (window.confirm(t('confirmDelComm'))) {
+                try {
+                    const res = await fetch(`/api/communities/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        setCommunities(prev => prev.filter(c => c.id !== id));
+                        if (selectedCommunityId === id) { setSelectedCommunityId(null); setSelectedApartmentId(null); }
+                    } else throw new Error('Delete failed');
+                } catch (err) { alert(t('delError')); }
             }
         };
 
-        // --- UPDATED METHOD 1 ---
-        const handleFile = (e, key) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            setForm(prev => ({
-                ...prev,
-                [key]: file
-            }));
+        const deleteApartment = async (e, communityId, aptId) => {
+            e.stopPropagation();
+            if (window.confirm(t('confirmDelApt'))) {
+                try {
+                    const res = await fetch(`/api/apartments/${aptId}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        setCommunities(prev => prev.map(c => {
+                            if (c.id === communityId) return { ...c, apartments: (c.apartments || []).filter(a => a.id !== aptId) };
+                            return c;
+                        }));
+                        if (selectedApartmentId === aptId) setSelectedApartmentId(null);
+                    } else throw new Error('Delete failed');
+                } catch (err) { alert(t('delError')); }
+            }
         };
+
+        const deleteItem = async (e, communityId, aptId, itemId) => {
+            e.stopPropagation();
+            if (window.confirm(t('confirmDelItem'))) {
+                try {
+                    const res = await fetch(`/api/items/${itemId}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        setCommunities(prev => prev.map(c => {
+                            if (c.id === communityId) {
+                                return {
+                                    ...c,
+                                    apartments: (c.apartments || []).map(a => {
+                                        if (a.id === aptId) return { ...a, items: (a.items || []).filter(i => i.id !== itemId) };
+                                        return a;
+                                    })
+                                };
+                            }
+                            return c;
+                        }));
+                    } else throw new Error('Delete failed');
+                } catch (err) { alert(t('delError')); }
+            }
+        };
+
+        const handleFileChange = (e) => {
+            const files = Array.from(e.target.files);
+            const validSizeFiles = files.filter(file => file.size <= MAX_FILE_SIZE_BYTES);
+            if (validSizeFiles.length < files.length) alert(t('maxSizeLimitMsg'));
+
+            setUploadedFiles(prev => {
+                const availableSlots = MAX_FILES - prev.length;
+                if (availableSlots <= 0) { alert(t('maxFileLimitMsg')); return prev; }
+                const allowedFiles = validSizeFiles.slice(0, availableSlots);
+                if (validSizeFiles.length > availableSlots) alert(t('maxFileLimitMsg'));
+
+                const mappedFiles = allowedFiles.map(file => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: file.name,
+                    type: file.type || file.name.split('.').pop(),
+                    size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+                    url: URL.createObjectURL(file),
+                    rawFile: file
+                }));
+                return [...prev, ...mappedFiles];
+            });
+            e.target.value = null;
+        };
+
+        const handleAddScannedPhoto = (file, dataUrl) => {
+            if (file.size > MAX_FILE_SIZE_BYTES) { alert(t('maxSizeLimitMsg')); return; }
+            setUploadedFiles(prev => {
+                if (prev.length >= MAX_FILES) { alert(t('maxFileLimitMsg')); return prev; }
+                return [...prev, {
+                    id: Math.random().toString(36).substr(2, 9),
+                    name: file.name,
+                    type: file.type,
+                    size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+                    url: dataUrl,
+                    rawFile: file
+                }];
+            });
+        };
+
+        const removeFile = (id) => setUploadedFiles(prev => prev.filter(f => f.id !== id));
 
         const startCamera = async () => {
             try {
                 setShowCameraModal(true);
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
                 setCameraStream(stream);
             } catch (err) {
-                console.error("Camera hardware access failed:", err);
                 setShowCameraModal(false);
                 document.getElementById('hidden-fallback-scan').click();
             }
         };
 
         const stopCamera = () => {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                setCameraStream(null);
-            }
+            if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); setCameraStream(null); }
             setShowCameraModal(false);
         };
 
         const capturePhoto = () => {
             if (videoRef.current) {
-                const video = videoRef.current;
                 const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 640;
-                canvas.height = video.videoHeight || 480;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Converts canvas directly to File blob for S3 upload
+                canvas.width = videoRef.current.videoWidth || 640;
+                canvas.height = videoRef.current.videoHeight || 480;
+                canvas.getContext('2d').drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/png');
                 canvas.toBlob((blob) => {
-                    const file = new File([blob], "scanned_doc.jpg", { type: "image/jpeg" });
-                    setForm(prev => ({ ...prev, invoiceImage: file }));
-                }, 'image/jpeg');
-
+                    const file = new File([blob], `Scan_${Date.now()}.png`, { type: "image/png" });
+                    handleAddScannedPhoto(file, dataUrl);
+                }, 'image/png');
                 stopCamera();
             }
         };
 
-        // --- UPDATED METHOD 2 ---
+        const startEdit = (item) => {
+            setEditingItemId(item.id);
+            setWorkOrderCategory(item.category || "General Maintenance");
+            setWorkOrderTitle(item.title);
+            setWorkOrderPrice(item.price);
+            setWorkOrderNotes(item.notes || "");
+            setWorkOrderStatus(item.status || "Todo");
+
+            if (item.date) {
+                const d = new Date(item.date);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                setWorkOrderDate(d.toISOString().slice(0, 16));
+            }
+
+            const preExistingFiles = [];
+            if (item.productImageUrl || item.productImage) {
+                const url = item.productImageUrl || item.productImage;
+                preExistingFiles.push({ id: 'pre-prod-' + item.id, name: url.split('/').pop() || 'Product Image', type: 'image/*', url: url, isPreExisting: true });
+            }
+            if (item.invoiceImageUrl || item.invoiceImage) {
+                const url = item.invoiceImageUrl || item.invoiceImage;
+                preExistingFiles.push({ id: 'pre-inv-' + item.id, name: url.split('/').pop() || 'Invoice Image', type: 'image/*', url: url, isPreExisting: true });
+            }
+            if (item.attachments && Array.isArray(item.attachments)) {
+                item.attachments.forEach((att, idx) => {
+                    const url = typeof att === 'string' ? att : att.url;
+                    preExistingFiles.push({
+                        id: `pre-att-${item.id}-${idx}`,
+                        name: url.split('/').pop() || `Document ${idx + 1}`,
+                        type: url.toLowerCase().includes('.pdf') ? 'application/pdf' : url.toLowerCase().includes('.mp4') ? 'video/mp4' : 'image/*',
+                        url: url,
+                        isPreExisting: true
+                    });
+                });
+            }
+            setUploadedFiles(preExistingFiles.slice(0, MAX_FILES));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
         const saveItem = async () => {
-            if (!form.title || !form.price) {
-                alert("Please enter an item fix/product name and price.");
+            const safeTitle = workOrderTitle != null ? workOrderTitle.toString().trim() : "";
+            const safePrice = workOrderPrice != null ? workOrderPrice.toString().trim() : "";
+
+            if (safeTitle === "" || safePrice === "" || !selectedApartmentId) {
+                alert(lang === 'tr' ? "Lütfen bir başlık ve fiyat girin." : "Please enter a title and price.");
                 return;
             }
 
-            const texasDateTime = new Intl.DateTimeFormat('en-US', {
-                timeZone: 'America/Chicago',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            }).format(new Date());
-
             try {
                 const formData = new FormData();
+                formData.append("title", safeTitle);
+                formData.append("price", safePrice);
+                formData.append("notes", workOrderNotes || "");
+                formData.append("status", workOrderStatus || "Todo");
+                formData.append("date", workOrderDate || "");
+                formData.append("category", workOrderCategory || "General Maintenance");
 
-                formData.append("title", form.title);
-                formData.append("price", form.price);
-                formData.append("notes", form.notes || "");
-                formData.append("status", form.status || "Todo");
-                formData.append("date", form.tarih || texasDateTime);
-                formData.append("apartmentId", selectedId);
+                const newFiles = uploadedFiles.filter(f => f.rawFile).map(f => f.rawFile);
+                newFiles.forEach(file => { formData.append("attachments", file); });
 
-                if (form.productImage) {
-                    formData.append("productImage", form.productImage);
-                }
+                const existingFilesToKeep = uploadedFiles.filter(f => f.isPreExisting).map(f => f.url);
+                existingFilesToKeep.forEach(url => { formData.append("retainedAttachments", url); });
 
-                if (form.invoiceImage) {
-                    formData.append("invoiceImage", form.invoiceImage);
-                }
+                const url = editingItemId ? `/api/items/${editingItemId}` : `/api/apartments/${selectedApartmentId}/items`;
+                const method = editingItemId ? 'PUT' : 'POST';
 
-               const response = await fetch(`/api/apartments/${selectedId}/items`, {
-                      method: 'POST',
-                      body: formData
-            });
-
-                if (!response.ok) {
-                    throw new Error("Failed to save item");
-                }
-
+                const response = await fetch(url, { method: method, body: formData });
+                if (!response.ok) throw new Error("Save operation failed.");
                 const savedItem = await response.json();
 
-                const updatedApartments = apartments.map(apt => {
-                    if (apt.id === selectedId) {
-                        return {
-                            ...apt,
-                            items: [savedItem, ...apt.items]
-                        };
+                setCommunities(prev => prev.map(c => {
+                    if (c.id === selectedCommunityId) {
+                        return { ...c, apartments: c.apartments.map(a => {
+                            if (a.id === selectedApartmentId) {
+                                const existingItems = a.items || [];
+                                const updatedItems = editingItemId
+                                    ? existingItems.map(i => i.id === editingItemId ? savedItem : i)
+                                    : [savedItem, ...existingItems];
+                                return { ...a, items: updatedItems };
+                            }
+                            return a;
+                        })};
                     }
-                    return apt;
-                });
+                    return c;
+                }));
 
-                setApartments(updatedApartments);
-
-                setForm({
-                    title: '',
-                    price: '',
-                    productImage: null,
-                    invoiceImage: null,
-                    notes: '',
-                    tarih: '',
-                    status: 'Todo'
-                });
-
-                alert("Item saved successfully!");
+                setEditingItemId(null);
+                setWorkOrderTitle("");
+                setWorkOrderPrice("");
+                setWorkOrderNotes("");
+                setUploadedFiles([]);
+                setWorkOrderStatus("Todo");
 
             } catch (err) {
-                console.error(err);
-                alert("Failed to save item.");
+                console.error("Database connection issue: ", err);
+                alert(lang === 'tr' ? "Sunucuya bağlanırken bir hata oluştu." : "An error occurred while connecting to the server.");
             }
         };
 
-        const updateItemStatus = (itemId, newStatus) => {
-            const updatedApartments = apartments.map(apt => {
-                if (apt.id === selectedId) {
-                    const updatedApt = {
-                        ...apt,
-                        items: apt.items.map(item => item.id === itemId ? { ...item, status: newStatus } : item)
-                    };
-                    // TODO: Create a fetch/PUT call here to sync status change to backend
-                    return updatedApt;
-                }
-                return apt;
-            });
-            setApartments(updatedApartments);
+        const updateItemStatus = async (communityId, aptId, itemId, newStatus) => {
+            try {
+                const res = await fetch(`/api/items/${itemId}/status?status=${newStatus}`, { method: 'PUT' });
+                if (res.ok) {
+                    setCommunities(prev => prev.map(c => {
+                        if (c.id === communityId) {
+                            return { ...c, apartments: (c.apartments || []).map(a => {
+                                    if (a.id === aptId) return { ...a, items: (a.items || []).map(i => i.id === itemId ? { ...i, status: newStatus } : i) };
+                                    return a;
+                                })
+                            };
+                        }
+                        return c;
+                    }));
+                } else throw new Error("Update failed");
+            } catch (err) { alert("Durum güncellenemedi."); }
         };
 
-        const deleteItem = (id) => {
-            if (window.confirm('Are you sure you want to delete this record?')) {
-                const updatedApartments = apartments.map(apt => {
-                    if (apt.id === selectedId) {
-                        const updatedApt = { ...apt, items: apt.items.filter(i => i.id !== id) };
-                        // TODO: Create a fetch/DELETE call here to sync deletion to backend
-                        return updatedApt;
-                    }
-                    return apt;
-                });
-                setApartments(updatedApartments);
-            }
-        };
-
-        const totalApartments = apartments.length;
-        const grandTotalExpenses = apartments.reduce((acc, apt) => acc + apt.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0), 0);
-
-        const totalActiveTasks = apartments.reduce((acc, apt) =>
-            acc + apt.items.filter(i => i.status === 'Todo' || i.status === 'In Progress').length, 0
-        );
-
-        const filteredList = apartments.filter(a => a.id.toLowerCase().includes(searchTerm.toLowerCase()));
-
-        const getStatusBadgeClass = (status) => {
-            switch(status) {
-                case 'In Progress': return 'bg-amber-50 text-amber-700 border-amber-200';
-                case 'Complete': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                default: return 'bg-slate-100 text-slate-600 border-slate-200';
-            }
-        };
-
-        // Fixed preview renderer to handle both local Files objects and S3 strings
-        const renderPreview = (source, label) => {
-            if (!source) return null;
-
-            let isPdf = false;
-            let srcUrl = '';
-
-            if (source instanceof File) {
-                isPdf = source.type === 'application/pdf';
-                srcUrl = URL.createObjectURL(source);
-            } else if (typeof source === 'string') {
-                isPdf = source.startsWith('data:application/pdf') || source.endsWith('.pdf');
-                srcUrl = source;
-            }
-
-            if (isPdf) {
-                return (
-                    <div className="text-center text-rose-500 p-1 flex flex-col items-center justify-center">
-                        <Icons.File size={24} className="mx-auto" />
-                        <span className="text-[9px] font-black mt-0.5 block truncate max-w-full uppercase">{label || 'PDF'}</span>
-                    </div>
-                );
-            }
-            return <img src={srcUrl} className="absolute inset-0 w-full h-full object-cover"/>;
-        };
-
-        const renderListThumbnail = (source, fallbackIcon) => {
-            if (!source) {
-                return <div className="w-14 h-14 bg-white rounded-lg border border-dashed flex items-center justify-center text-slate-300">{fallbackIcon}</div>;
-            }
-
-            let isPdf = false;
-            let srcUrl = '';
-
-            if (source instanceof File) {
-                isPdf = source.type === 'application/pdf';
-                srcUrl = URL.createObjectURL(source);
-            } else if (typeof source === 'string') {
-                isPdf = source.startsWith('data:application/pdf') || source.endsWith('.pdf');
-                srcUrl = source;
-            }
-
-            if (isPdf) {
-                return <div className="w-14 h-14 bg-rose-50 rounded-lg border border-rose-100 flex items-center justify-center text-rose-500"><Icons.File size={20}/></div>;
-            }
-            return <img src={srcUrl} className="w-14 h-14 rounded-lg object-cover border" />;
-        };
+        const selectedCommunity = communities.find(c => c.id === selectedCommunityId);
+        const selectedApartment = selectedCommunity?.apartments?.find(a => a.id === selectedApartmentId);
+        const filteredCommunities = communities.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
 
         if (!isAuthenticated) {
             return (
-                <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900 relative overflow-hidden">
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                    <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-10 text-center relative z-10 animate-in">
-                        <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><Icons.Layout size={40} /></div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-2">Apartment Manager</h2>
-                        <p className="text-slate-400 font-bold text-sm mb-8">Sign in to access dashboard</p>
-                        <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-4 bg-white border-2 border-slate-200 hover:border-slate-400 text-slate-700 font-black py-4 px-6 rounded-2xl transition-all shadow-sm">
-                            <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.866-3.577-7.866-8s3.536-8 7.866-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.436 2.064 15.62 1 12.24 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.74-.08-1.3-.176-1.854H12.24z"/></svg>
-                            Sign in with Google
-                        </button>
+                <div className="min-h-screen flex flex-col justify-between p-4 bg-slate-950 relative overflow-hidden">
+                    <div className="flex justify-end p-2 z-50">
+                        <div className="bg-slate-900 p-1 rounded-xl flex gap-1 border border-slate-800">
+                            <button onClick={() => changeLanguage('tr')} className={`px-4 py-2 rounded-lg text-sm font-black transition-colors ${lang === 'tr' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>TR</button>
+                            <button onClick={() => changeLanguage('en')} className={`px-4 py-2 rounded-lg text-sm font-black transition-colors ${lang === 'en' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>EN</button>
+                        </div>
                     </div>
+                    <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 text-center relative z-10 animate-in mx-auto my-auto border border-slate-200">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/30"><Icons.Layout size={36} /></div>
+                        <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{t('title')}</h2>
+                        <p className="text-slate-600 font-bold text-sm px-4">Professional Premium Property Management</p>
+                        <button onClick={handleGoogleLogin} className="w-full mt-10 flex items-center justify-center gap-4 bg-slate-900 text-white font-extrabold text-lg py-5 rounded-2xl shadow-xl hover:bg-black hover:-translate-y-1 transition-all duration-300">{t('googleLogin')}</button>
+                    </div>
+                    <div></div>
                 </div>
             );
         }
 
         return (
             <div className="min-h-screen flex flex-col">
-                <header className="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-lg border-b border-slate-800">
-                    <div className="max-w-7xl mx-auto flex justify-between items-center">
-                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedId(null)}>
-                            <div className="bg-indigo-600 p-2 rounded-xl text-white"><Icons.Layout size={22} /></div>
-                            <h1 className="text-xl font-black tracking-tight">Apartment Manager</h1>
+                <header className="bg-slate-900 text-white p-4 sticky top-0 z-40 shadow-xl border-b border-slate-800">
+                    <div className="max-w-[90rem] mx-auto w-full flex justify-between items-center">
+                        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setSelectedCommunityId(null); setSelectedApartmentId(null); setEditingItemId(null); setUploadedFiles([]); }}>
+                            <div className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-md shadow-indigo-500/40 group-hover:bg-indigo-500 transition-colors"><Icons.Layout size={20} /></div>
+                            <h1 className="text-xl font-black tracking-tight hidden sm:block text-white">{t('title')}</h1>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="relative w-48 sm:w-64">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icons.Search size={16} /></span>
-                                <input
-                                    className="w-full bg-slate-800/80 border border-slate-700/80 rounded-xl py-2 pl-10 pr-4 outline-none text-sm text-slate-200 focus:border-indigo-500 transition-all"
-                                    placeholder="Search Apartment..."
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            <button onClick={handleLogout} className="bg-slate-800 hover:bg-rose-600/20 hover:text-rose-400 p-2.5 rounded-xl transition-all text-slate-400"><Icons.Lock size={18} /></button>
+                            <button onClick={handleLogout} className="bg-slate-800 p-3 rounded-xl text-slate-300 hover:text-rose-400 hover:bg-slate-700 border-2 border-slate-700 transition-colors shrink-0"><Icons.Lock size={18} /></button>
                         </div>
                     </div>
                 </header>
 
-                <div className="max-w-7xl mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 items-start">
+                <div className="max-w-[90rem] mx-auto w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 items-start">
+                    {/* LEFT SIDEBAR */}
+                    <aside className="lg:col-span-3 flex flex-col gap-6 self-stretch">
+                        <button onClick={() => { setSelectedCommunityId(null); setSelectedApartmentId(null); setEditingItemId(null); setUploadedFiles([]); }} className={`w-full p-4 rounded-2xl font-black text-sm flex items-center gap-3 border-2 transition-all ${selectedCommunityId === null ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 shadow-sm'}`}>
+                            <Icons.Home size={20} className={selectedCommunityId === null ? "text-indigo-400" : "text-slate-500"} /> {t('generalPortfolio')}
+                        </button>
 
-                    <aside className="lg:col-span-3 flex flex-col gap-6 self-stretch justify-between">
-                        <div className="space-y-6">
-                            <button
-                                onClick={() => setSelectedId(null)}
-                                className={`w-full p-4 rounded-2xl font-black text-sm flex items-center gap-3 border-2 transition-all ${selectedId === null ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white border-transparent text-slate-700 hover:border-slate-200'}`}
-                            >
-                                <Icons.Layout size={18} /> Dashboard
-                            </button>
+                        <div className="bg-white rounded-3xl border-2 border-slate-200 p-6 shadow-sm">
+                            <div className="relative w-full mb-5">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icons.Search size={14} /></span>
+                                <input className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2 pl-9 pr-3 outline-none text-xs font-bold text-slate-800 placeholder-slate-400 focus:border-indigo-500 transition-all" placeholder={t('searchPlaceholder')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            </div>
 
-                            <div className="border-t border-slate-200 pt-4">
-                                <div className="flex justify-between items-center mb-3 px-1">
-                                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Apartments List</p>
-                                </div>
-                                <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
-                                    {filteredList.map(apt => {
-                                        const aptTotal = apt.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-                                        const countTodo = apt.items.filter(t => t.status === 'Todo').length;
-                                        const countInProg = apt.items.filter(t => t.status === 'In Progress').length;
+                            <p className="text-xs font-black uppercase text-slate-500 tracking-widest mb-3 px-1">{t('sitesProperties')}</p>
 
-                                        return (
-                                            <button
-                                                key={apt.id}
-                                                onClick={() => setSelectedId(apt.id)}
-                                                className={`w-full p-3 rounded-xl border transition-all text-sm flex flex-col gap-2 text-left ${selectedId === apt.id ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'}`}
-                                            >
-                                                <div className="flex justify-between items-center w-full gap-2">
-                                                    <span className="font-bold truncate">{apt.id}</span>
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                        <span className={`text-xs font-black px-2 py-0.5 rounded-md ${selectedId === apt.id ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-600'}`}>${aptTotal}</span>
+                            <div className="flex flex-col gap-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                {filteredCommunities.map(comm => {
+                                    const totalExp = (comm.apartments || []).reduce((acc, apt) => acc + (apt.items || []).reduce((sum, item) => sum + (Number(item.price) || 0), 0), 0);
+                                    return (
+                                        <div key={comm.id} className={`w-full rounded-2xl border-2 transition-all text-sm flex items-center pr-2 ${selectedCommunityId === comm.id ? 'bg-indigo-50 border-indigo-600 text-indigo-900 shadow-md' : 'bg-white border-slate-100 text-slate-700 hover:border-slate-300 hover:bg-slate-50'}`}>
+                                            <button onClick={() => { setSelectedCommunityId(comm.id); setSelectedApartmentId(null); setEditingItemId(null); setUploadedFiles([]); }} className="flex-1 p-4 flex justify-between items-center gap-2 text-left bg-transparent min-w-0">
+                                                <span className="font-extrabold truncate text-[15px]">{comm.name}</span>
+                                                <span className={`text-xs font-black px-2.5 py-1.5 rounded-lg shrink-0 ${selectedCommunityId === comm.id ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>${totalExp}</span>
+                                            </button>
+                                            <button onClick={(e) => deleteCommunity(e, comm.id)} className="p-2 ml-1 text-slate-400 hover:text-white hover:bg-rose-500 rounded-lg transition-colors" title="Delete Community">
+                                                <Icons.Trash size={16} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <form onSubmit={handleAddCommunity} className="mt-6 flex gap-2 pt-5 border-t-2 border-slate-100">
+                                <input type="text" required className="flex-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm font-bold text-slate-800 placeholder-slate-400" placeholder={t('siteNamePlaceholder')} value={newCommunityName} onChange={e => setNewCommunityName(e.target.value)} />
+                                <button type="submit" className="bg-slate-900 hover:bg-black text-white font-bold text-sm px-5 rounded-xl transition-colors shrink-0 shadow-md"><Icons.Plus size={18}/></button>
+                            </form>
+                        </div>
+                    </aside>
 
-                                                        {apt.items.length === 0 && (
-                                                            <span
-                                                                onClick={(e) => deleteApartment(apt.id, e)}
-                                                                className={`p-1 rounded-md transition-all ${selectedId === apt.id ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/20' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'}`}
-                                                                title="Delete Empty Apartment"
-                                                            >
-                                                                <Icons.Trash size={13} />
-                                                            </span>
-                                                        )}
+                    {/* MAIN CONTENT */}
+                    <main className="lg:col-span-9 min-h-[600px]">
+
+                        {/* 1. GLOBAL DASHBOARD VIEW */}
+                        {selectedCommunityId === null && (
+                            <div className="space-y-8 animate-in">
+                                <div className="bg-white rounded-[2rem] border-2 border-slate-200 p-8 sm:p-10 shadow-sm">
+                                    <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">{t('portfolioStatus')}</h2><p className="text-slate-600 font-bold text-sm mt-2">{t('portfolioSub')}</p></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                                        {communities.map(comm => {
+                                            const totalUnits = (comm.apartments || []).length;
+                                            const totalExp = (comm.apartments || []).reduce((acc, apt) => acc + (apt.items || []).reduce((sum, item) => sum + (Number(item.price) || 0), 0), 0);
+                                            return (
+                                                <div key={comm.id} onClick={() => { setSelectedCommunityId(comm.id); setSelectedApartmentId(null); }} className="bg-white border-2 border-slate-200 hover:border-indigo-600 p-6 rounded-3xl cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden">
+                                                    <h4 className="text-2xl font-black text-slate-900 group-hover:text-indigo-700 transition-colors">{comm.name}</h4>
+                                                    <div className="mt-8 flex justify-between items-center text-sm font-black uppercase tracking-wider border-t-2 border-slate-100 pt-5">
+                                                        <span className="text-slate-500">{totalUnits} {t('units')}</span>
+                                                        <span className="text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg">${totalExp}</span>
                                                     </div>
                                                 </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
 
-                                                {(countTodo > 0 || countInProg > 0) && (
-                                                    <div className="flex gap-2">
-                                                        {countTodo > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${selectedId === apt.id ? 'bg-slate-600 text-slate-200' : 'bg-slate-200 text-slate-600'}`}>Todo: {countTodo}</span>}
-                                                        {countInProg > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${selectedId === apt.id ? 'bg-amber-600/30 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>In Prog: {countInProg}</span>}
+                                {/* YENİ: ACTIVE APARTMENTS TABLE DASHBOARD */}
+                                <div className="bg-white border-2 border-slate-200 rounded-[2rem] p-8 sm:p-10 shadow-sm">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 border-b-2 border-slate-100 pb-8">
+                                        <div>
+                                            <h3 className="text-2xl font-black text-slate-900">{t('activeUnitsTitle')}</h3>
+                                            <p className="text-sm font-bold text-slate-500 mt-2">{t('activeUnitsSub')}</p>
+                                        </div>
+                                        <div className="relative w-full sm:w-80">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Icons.Search size={16} /></span>
+                                            <input
+                                                className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-3 pl-12 pr-4 outline-none text-sm font-bold text-slate-800 focus:border-indigo-500 transition-all placeholder-slate-400"
+                                                placeholder={t('searchActiveUnits')}
+                                                value={dashboardSearch}
+                                                onChange={e => setDashboardSearch(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse min-w-[600px]">
+                                            <thead>
+                                                <tr className="border-b-2 border-slate-100">
+                                                    <th className="pb-4 pt-2 px-2 text-xs font-black uppercase text-slate-400 tracking-widest">{t('communityHeader')}</th>
+                                                    <th className="pb-4 pt-2 px-2 text-xs font-black uppercase text-slate-400 tracking-widest">{t('unitHeader')}</th>
+                                                    <th className="pb-4 pt-2 px-2 text-xs font-black uppercase text-slate-400 tracking-widest">{t('recordsHeader')}</th>
+                                                    <th className="pb-4 pt-2 px-2 text-xs font-black uppercase text-slate-400 tracking-widest">{t('totalExpense')}</th>
+                                                    <th className="pb-4 pt-2 px-2 text-xs font-black uppercase text-slate-400 tracking-widest text-right"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y-2 divide-slate-50">
+                                                {(() => {
+                                                    const allActiveApts = communities.flatMap(c =>
+                                                        (c.apartments || [])
+                                                            .filter(a => a.items && a.items.length > 0)
+                                                            .map(a => ({ ...a, communityName: c.name, communityId: c.id }))
+                                                    ).filter(a =>
+                                                        a.id.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+                                                        a.communityName.toLowerCase().includes(dashboardSearch.toLowerCase())
+                                                    );
+
+                                                    if (allActiveApts.length === 0) {
+                                                        return (
+                                                            <tr>
+                                                                <td colSpan="5" className="py-12 text-center text-slate-400 font-bold">{t('noItems')}</td>
+                                                            </tr>
+                                                        );
+                                                    }
+
+                                                    return allActiveApts.map(apt => {
+                                                        const aptTotal = (apt.items || []).reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                                                        const aptCount = (apt.items || []).length;
+                                                        return (
+                                                            <tr key={`${apt.communityId}-${apt.id}`} className="hover:bg-slate-50 transition-colors group">
+                                                                <td className="py-5 px-2 font-black text-slate-800">{apt.communityName}</td>
+                                                                <td className="py-5 px-2 font-black text-indigo-600 text-lg">{apt.id}</td>
+                                                                <td className="py-5 px-2">
+                                                                    <span className="bg-slate-100 text-slate-600 font-black py-1.5 px-3 rounded-lg text-xs tracking-wider">{aptCount} {t('workOrders')}</span>
+                                                                </td>
+                                                                <td className="py-5 px-2 font-black text-emerald-700 text-lg">${aptTotal}</td>
+                                                                <td className="py-5 px-2 text-right">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedCommunityId(apt.communityId);
+                                                                            setSelectedApartmentId(apt.id);
+                                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                        }}
+                                                                        className="bg-white border-2 border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-600 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-sm group-hover:shadow-md"
+                                                                    >
+                                                                        {t('goToApt')}
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    });
+                                                })()}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. COMMUNITY APARTMENTS LIST VIEW */}
+                        {selectedCommunityId !== null && selectedApartmentId === null && selectedCommunity && (
+                            <div className="bg-white rounded-[2rem] border-2 border-slate-200 p-8 sm:p-10 shadow-sm animate-in space-y-8">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 border-b-2 border-slate-100 pb-8">
+                                    <div>
+                                        <h2 className="text-4xl font-black text-slate-900 tracking-tight">{selectedCommunity.name}</h2>
+                                        <p className="text-slate-600 font-bold mt-2">{t('aptsAndOrders')}</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 w-full sm:w-auto">
+                                        <form onSubmit={handleAddApartment} className="flex gap-3 w-full">
+                                            <input type="text" required className="flex-1 p-3 bg-white border-2 border-slate-200 rounded-xl outline-none text-sm font-bold text-slate-800 focus:border-indigo-500 placeholder-slate-400" placeholder={t('aptNoPlaceholder')} value={newAptName} onChange={e => setNewAptName(e.target.value)} />
+                                            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm px-6 rounded-xl transition-colors shadow-lg">{t('addBtn')}</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {(selectedCommunity.apartments || []).map(apt => {
+                                        const aptTotal = (apt.items || []).reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                                        const aptCount = (apt.items || []).length;
+                                        return (
+                                            <div key={apt.id} onClick={() => setSelectedApartmentId(apt.id)} className="bg-white border-2 border-slate-200 hover:border-indigo-600 p-6 rounded-3xl cursor-pointer flex flex-col justify-between gap-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative">
+                                                <button onClick={(e) => deleteApartment(e, selectedCommunity.id, apt.id)} className="absolute top-5 right-5 p-2 text-slate-300 hover:text-white hover:bg-rose-500 rounded-xl transition-colors" title="Delete Apartment">
+                                                    <Icons.Trash size={18}/>
+                                                </button>
+                                                <div>
+                                                    <h4 className="text-2xl font-black text-slate-900 group-hover:text-indigo-700 transition-colors mb-6 pr-10">{apt.id}</h4>
+                                                    <div className="text-3xl font-black text-emerald-700 mb-2">${aptTotal}</div>
+
+                                                    {/* YENİ: Daire kutucuğu içindeki iş emri sayısı */}
+                                                    <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest mt-3">
+                                                        <span className="text-slate-500">{t('totalExpense')}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                        <span className="text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">{aptCount} {t('workOrders')}</span>
                                                     </div>
-                                                )}
-                                            </button>
+                                                </div>
+                                                <div className="text-sm font-black text-indigo-600 group-hover:text-indigo-800 group-hover:translate-x-2 transition-all pt-5 border-t-2 border-slate-100">
+                                                    {t('detailsAndOrder')}
+                                                </div>
+                                            </div>
                                         );
                                     })}
                                 </div>
                             </div>
-                        </div>
-
-                        {currentUser && (
-                            <div className="bg-slate-900 text-white p-4 rounded-2xl flex items-center gap-3 shadow-inner border border-slate-800 mt-auto">
-                                <img src={currentUser.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover border border-indigo-500/50" />
-                                <div className="overflow-hidden">
-                                    <p className="text-xs font-black text-slate-200 truncate">{currentUser.name}</p>
-                                    <p className="text-[10px] text-slate-400 font-medium truncate">{currentUser.email}</p>
-                                </div>
-                            </div>
                         )}
-                    </aside>
 
-                    <main className="lg:col-span-9 bg-white rounded-[2rem] border border-slate-200 p-6 md:p-8 shadow-sm min-h-[500px] overflow-hidden">
-
-                        {selectedId === null ? (
-                            <div className="animate-in space-y-8">
-                                <div>
-                                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">Dashboard</h2>
-                                    <p className="text-slate-400 font-bold text-sm mt-1">Overview of your apartment management</p>
-                                </div>
-
-                                {totalApartments === 0 ? (
-                                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-[2rem] text-center max-w-xl mx-auto py-12">
-                                        <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><Icons.Home size={28}/></div>
-                                        <h3 className="text-xl font-black text-slate-800 mb-1">No Apartments Found</h3>
-                                        <p className="text-sm font-medium text-slate-400 mb-6">Start managing records by adding an apartment.</p>
-                                        <form onSubmit={handleAddApartment} className="flex gap-2 max-w-md mx-auto">
-                                            <input type="text" required className="flex-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 font-bold text-sm" placeholder="e.g., Apartment A1" value={newAptName} onChange={e => setNewAptName(e.target.value)} />
-                                            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 rounded-xl transition-all">Add</button>
-                                        </form>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-8">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex justify-between items-center">
-                                                <div><p className="text-sm font-black text-slate-400 uppercase tracking-wider">Apartments</p><p className="text-3xl font-black text-slate-800 mt-1">{totalApartments}</p></div>
-                                                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><Icons.Home size={24}/></div>
-                                            </div>
-                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex justify-between items-center">
-                                                <div><p className="text-sm font-black text-slate-400 uppercase tracking-wider">Active Tasks</p><p className="text-3xl font-black text-amber-600 mt-1">{totalActiveTasks}</p></div>
-                                                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Icons.Wrench size={24}/></div>
-                                            </div>
-                                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex justify-between items-center">
-                                                <div><p className="text-sm font-black text-slate-400 uppercase tracking-wider">Total Expenses</p><p className="text-3xl font-black text-emerald-600 mt-1">${grandTotalExpenses.toLocaleString()}</p></div>
-                                                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><Icons.TrendingUp size={24}/></div>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 max-w-md">
-                                            <h4 className="text-sm font-black text-slate-700 mb-2.5 uppercase tracking-wide flex items-center gap-1.5">
-                                                <Icons.Plus size={16} className="text-indigo-600" /> Add New Apartment
-                                            </h4>
-                                            <form onSubmit={handleAddApartment} className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    className="flex-1 p-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 font-bold text-sm"
-                                                    placeholder="e.g., A3, B12"
-                                                    value={newAptName}
-                                                    onChange={e => setNewAptName(e.target.value)}
-                                                />
-                                                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider px-5 rounded-xl transition-all shadow-sm">Add</button>
-                                            </form>
-                                        </div>
-
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <h3 className="font-black text-slate-800 text-lg mb-6 flex items-center gap-2">
-                                                <Icons.Home size={20} className="text-indigo-600"/> Apartments Overview
-                                            </h3>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                {filteredList.map(apt => {
-                                                    const aptTotal = apt.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-                                                    const countTodo = apt.items.filter(i => i.status === 'Todo').length;
-                                                    const countInProg = apt.items.filter(i => i.status === 'In Progress').length;
-                                                    const countComplete = apt.items.filter(i => i.status === 'Complete').length;
-
-                                                    return (
-                                                        <div
-                                                            key={apt.id}
-                                                            onClick={() => setSelectedId(apt.id)}
-                                                            className="bg-slate-50 border border-slate-200 hover:border-indigo-400 p-5 rounded-2xl shadow-sm cursor-pointer transition-all flex flex-col justify-between gap-4 group"
-                                                        >
-                                                            <div className="flex justify-between items-start">
-                                                                <h4 className="text-xl font-black text-slate-800 group-hover:text-indigo-600 transition-colors truncate pr-2">{apt.id}</h4>
-                                                                <span className="text-lg font-black text-emerald-600 shrink-0">{aptTotal} $</span>
-                                                            </div>
-
-                                                            <div className="space-y-1 pt-2 border-t border-slate-200/60 text-xs font-bold">
-                                                                <div className="flex justify-between text-amber-700 bg-amber-50/60 px-2.5 py-1.5 rounded-lg">
-                                                                    <span>In Progress</span>
-                                                                    <span className="font-black">{countInProg}</span>
-                                                                </div>
-                                                                <div className="flex justify-between text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-lg">
-                                                                    <span>To Do</span>
-                                                                    <span className="font-black">{countTodo}</span>
-                                                                </div>
-                                                                <div className="flex justify-between text-emerald-700 bg-emerald-50/60 px-2.5 py-1.5 rounded-lg">
-                                                                    <span>Complete</span>
-                                                                    <span className="font-black">{countComplete}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="animate-in space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 pb-4 border-b border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => setSelectedId(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        {/* 3. WORK ORDER DETAIL VIEW */}
+                        {selectedCommunityId !== null && selectedApartmentId !== null && selectedApartment && (
+                            <div className="space-y-6 animate-in">
+                                <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-[2rem] border-2 border-slate-200 shadow-sm">
+                                    <div className="flex items-center gap-5">
+                                        <button onClick={() => { setSelectedApartmentId(null); setEditingItemId(null); setUploadedFiles([]); }} className="p-3 text-slate-600 hover:text-white hover:bg-slate-900 bg-slate-100 border-2 border-slate-200 hover:border-slate-900 rounded-xl transition-all shadow-sm">
+                                            <Icons.ArrowLeft size={20} />
                                         </button>
-                                        <h2 className="text-3xl font-black text-slate-800 tracking-tight">{selectedId} Profile</h2>
+                                        <div>
+                                            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">{selectedCommunity.name} <span className="text-slate-300 mx-2">/</span> <span className="text-indigo-600">{selectedApartment.id}</span></h2>
+                                        </div>
                                     </div>
-                                    <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl font-black text-sm">
-                                        Total: ${apartments.find(a => a.id === selectedId)?.items.reduce((sum, item) => sum + (Number(item.price) || 0), 0)}
+                                    <div className="flex items-center gap-3 bg-emerald-50 border-2 border-emerald-200 rounded-2xl px-6 py-4 shadow-sm">
+                                        <span className="text-sm font-black text-emerald-800 uppercase tracking-widest">{t('total')}:</span>
+                                        <span className="text-2xl font-black text-emerald-700">${(selectedApartment.items || []).reduce((sum, i) => sum + (Number(i.price) || 0), 0)}</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="space-y-3">
-                                            <input
-                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm font-bold"
-                                                placeholder="Item Fix / Actual Item (e.g., Fridge Repair)"
-                                                value={form.title}
-                                                onChange={e => setForm({...form, title: e.target.value})}
-                                            />
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="number"
-                                                    className="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-sm font-black text-emerald-600"
-                                                    placeholder="Price ($)"
-                                                    value={form.price}
-                                                    onChange={e => setForm({...form, price: e.target.value})}
-                                                />
-                                                <select
-                                                    className="p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-xs font-bold text-slate-600"
-                                                    value={form.status || 'Todo'}
-                                                    onChange={e => setForm({...form, status: e.target.value})}
-                                                >
-                                                    <option value="Todo">Todo</option>
-                                                    <option value="In Progress">In Progress</option>
-                                                    <option value="Complete">Complete</option>
+                                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+                                    {/* WORK ORDERS LIST */}
+                                    <div className="xl:col-span-7 space-y-6">
+                                        {!(selectedApartment.items && selectedApartment.items.length > 0) ? (
+                                            <div className="bg-white border-2 border-slate-200 rounded-[2rem] p-24 text-center shadow-sm">
+                                                <div className="w-20 h-20 bg-slate-100 border-2 border-slate-200 rounded-3xl flex items-center justify-center text-slate-400 mx-auto mb-6"><Icons.File size={32} /></div>
+                                                <h3 className="text-xl font-black text-slate-600">{t('noItems')}</h3>
+                                            </div>
+                                        ) : (
+                                            (selectedApartment.items || []).map(item => {
+                                                const allAttachments = [];
+                                                if (item.productImageUrl || item.productImage) allAttachments.push({ url: item.productImageUrl || item.productImage, name: 'Product Image' });
+                                                if (item.invoiceImageUrl || item.invoiceImage) allAttachments.push({ url: item.invoiceImageUrl || item.invoiceImage, name: 'Invoice Image' });
+                                                if (item.attachments) item.attachments.forEach((a, i) => allAttachments.push({ url: typeof a === 'string' ? a : a.url, name: typeof a === 'string' ? `Doc ${i+1}` : (a.name || `Doc ${i+1}`) }));
+
+                                                return (
+                                                    <div key={item.id} className={`bg-white border-2 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between gap-6 transition-all ${editingItemId === item.id ? 'border-indigo-500 shadow-indigo-500/20 ring-4 ring-indigo-500/10' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                        <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-slate-100 pb-5">
+                                                            <div className="flex flex-wrap items-center gap-3">
+                                                                <span className="px-3.5 py-1.5 text-[11px] font-black uppercase tracking-widest rounded-lg bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                                                    {item.category || "General"}
+                                                                </span>
+                                                                <select
+                                                                    value={item.status || "Todo"}
+                                                                    onChange={(e) => updateItemStatus(selectedCommunity.id, selectedApartment.id, item.id, e.target.value)}
+                                                                    className={`text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl border-2 outline-none cursor-pointer transition-colors shadow-sm ${
+                                                                        item.status === 'Complete' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                                                        item.status === 'InProgress' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                                                        'bg-slate-100 text-slate-700 border-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    <option value="Todo">{t('todo')}</option>
+                                                                    <option value="InProgress">{t('inProgress')}</option>
+                                                                    <option value="Complete">{t('complete')}</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="text-3xl font-black text-slate-900">${item.price}</div>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            <div className="flex justify-between items-start gap-4">
+                                                                <h3 className="text-2xl font-black text-slate-900 tracking-tight break-words leading-tight">{item.title}</h3>
+                                                                <div className="flex gap-2 shrink-0">
+                                                                    <button onClick={() => startEdit(item)} className={`p-3 rounded-xl border-2 transition-all shadow-sm ${editingItemId === item.id ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-600 hover:text-indigo-600'}`} title="Edit">
+                                                                        <Icons.Edit size={18} />
+                                                                    </button>
+                                                                    <button onClick={(e) => deleteItem(e, selectedCommunity.id, selectedApartment.id, item.id)} className="p-3 bg-white text-slate-400 hover:text-white border-2 border-slate-200 rounded-xl hover:bg-rose-600 hover:border-rose-600 transition-all shadow-sm" title="Delete">
+                                                                        <Icons.Trash size={18} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <span className="text-sm font-bold text-slate-500 block">
+                                                                {item.date ? new Date(item.date).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { dateStyle: 'long', timeStyle: 'short' }) : ''}
+                                                            </span>
+
+                                                            {item.notes && <p className="text-[15px] text-slate-700 font-medium whitespace-pre-wrap bg-slate-50 p-5 rounded-2xl border-2 border-slate-100 leading-relaxed shadow-inner">{item.notes}</p>}
+
+                                                            {allAttachments.length > 0 && (
+                                                                <div className="pt-4 mt-2">
+                                                                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">{t('attachments')} ({allAttachments.length})</h4>
+                                                                    <div className="flex flex-wrap gap-3">
+                                                                        {allAttachments.map((att, idx) => {
+                                                                            const urlLower = att.url ? att.url.toLowerCase() : '';
+                                                                            const isPdf = urlLower.includes('.pdf');
+                                                                            const isVideo = urlLower.includes('.mp4') || urlLower.includes('.mov');
+                                                                            return (
+                                                                                <button key={idx} onClick={() => setPreviewFile(att.url)} className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-sm font-bold transition-all shadow-sm group">
+                                                                                    {isVideo ? <Icons.Video size={16} className="text-indigo-500 group-hover:text-indigo-700"/> : isPdf ? <Icons.File size={16} className="text-rose-500 group-hover:text-rose-600"/> : <Icons.Image size={16} className="text-emerald-500 group-hover:text-emerald-600"/>}
+                                                                                    <span className="truncate max-w-[120px]">{att.name}</span>
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {/* WORK ORDER FORM */}
+                                    <div className={`xl:col-span-5 bg-white border-2 rounded-[2.5rem] p-8 shadow-xl transition-all duration-300 sticky top-28 ${editingItemId ? 'border-indigo-500 ring-4 ring-indigo-500/20' : 'border-slate-200'}`}>
+                                        <h3 className={`text-2xl font-black flex items-center gap-3 mb-8 ${editingItemId ? 'text-indigo-700' : 'text-slate-900'}`}>
+                                            {editingItemId ? <Icons.Edit size={24}/> : <Icons.Plus size={24} className="text-indigo-600"/>}
+                                            {editingItemId ? t('updateOrder') : t('saveOrder')}
+                                        </h3>
+
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="text-xs font-black uppercase text-slate-600 tracking-widest block mb-2">{t('category')}</label>
+                                                <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none text-[15px] font-bold focus:border-indigo-500 focus:bg-white text-slate-900 transition-all shadow-sm" value={workOrderCategory} onChange={e => setWorkOrderCategory(e.target.value)}>
+                                                    <option value="General Maintenance">{t('catGeneral')}</option>
+                                                    <option value="Appliance (Fridge, etc.)">{t('catAppliance')}</option>
+                                                    <option value="Plumbing">{t('catPlumbing')}</option>
+                                                    <option value="Electrical">{t('catElectrical')}</option>
+                                                    <option value="Floor Repair">{t('catFlooring')}</option>
+                                                    <option value="HVAC / AC">{t('catHVAC')}</option>
+                                                    <option value="Other">{t('catOther')}</option>
                                                 </select>
                                             </div>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {/* --- UPDATED INPUT 1 --- */}
-                                            <div>
-                                                <input id="prod-file" type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleFile(e, 'productImage')}/>
-                                                <label htmlFor="prod-file" className="h-24 border-2 border-dashed border-slate-200 bg-white rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 relative overflow-hidden">
-                                                    {form.productImage ? renderPreview(form.productImage, "PRODUCT") : <div className="text-center"><Icons.Image size={20} className="mx-auto text-slate-300"/><span className="text-[10px] font-black text-slate-400 mt-1 block">IMAGE/PDF</span></div>}
-                                                </label>
-                                            </div>
-
-                                            {/* --- UPDATED INPUT 2 --- */}
-                                            <div>
-                                                <input id="inv-file" type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleFile(e, 'invoiceImage')}/>
-                                                <label htmlFor="inv-file" className="h-24 border-2 border-dashed border-slate-200 bg-white rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 relative overflow-hidden">
-                                                    {form.invoiceImage ? renderPreview(form.invoiceImage, "INVOICE") : <div className="text-center"><Icons.File size={20} className="mx-auto text-slate-300"/><span className="text-[10px] font-black text-slate-400 mt-1 block">DOC/PDF</span></div>}
-                                                </label>
-                                            </div>
 
                                             <div>
-                                                <input id="hidden-fallback-scan" type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e, 'invoiceImage')}/>
-                                                <button type="button" onClick={startCamera} className="w-full h-24 border-2 border-dashed border-indigo-200 bg-indigo-50 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-100 relative overflow-hidden text-indigo-500 transition-all">
-                                                    {form.invoiceImage ? (
-                                                        <>
-                                                            {renderPreview(form.invoiceImage, "SCANNED")}
-                                                            <div className="absolute bottom-1 right-1 bg-indigo-600 text-white rounded-md p-1 shadow-xs"><Icons.Camera size={12}/></div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Icons.Camera size={24} className="mx-auto mb-1"/>
-                                                            <span className="text-[10px] font-black mt-1 block">SCAN DOC</span>
-                                                        </>
-                                                    )}
+                                                <label className="text-xs font-black uppercase text-slate-600 tracking-widest block mb-2">{t('jobTitle')}</label>
+                                                <input type="text" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none text-[15px] font-bold focus:border-indigo-500 focus:bg-white text-slate-900 transition-all shadow-sm placeholder-slate-400" placeholder="Example: Sink repair, New Fridge..." value={workOrderTitle} onChange={e => setWorkOrderTitle(e.target.value)} />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-5">
+                                                <div>
+                                                    <label className="text-xs font-black uppercase text-slate-600 tracking-widest block mb-2">{t('price')}</label>
+                                                    <input type="number" step="any" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none text-lg font-black focus:border-indigo-500 focus:bg-white text-emerald-700 transition-all shadow-sm placeholder-slate-300" placeholder="0.00" value={workOrderPrice} onChange={e => setWorkOrderPrice(e.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-black uppercase text-slate-600 tracking-widest block mb-2">{t('dateTime')}</label>
+                                                    <input type="datetime-local" className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none text-[15px] font-bold focus:border-indigo-500 focus:bg-white text-slate-900 transition-all shadow-sm" value={workOrderDate} onChange={e => setWorkOrderDate(e.target.value)} />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-black uppercase text-slate-600 tracking-widest block mb-2">Durum / Status</label>
+                                                <select className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none text-[15px] font-bold focus:border-indigo-500 focus:bg-white text-slate-900 transition-all shadow-sm" value={workOrderStatus} onChange={e => setWorkOrderStatus(e.target.value)}>
+                                                    <option value="Todo">{t('todo')}</option>
+                                                    <option value="InProgress">{t('inProgress')}</option>
+                                                    <option value="Complete">{t('complete')}</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-black uppercase text-slate-600 tracking-widest block mb-2">{t('notes')}</label>
+                                                <textarea className="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl outline-none text-[15px] font-semibold resize-none h-28 focus:border-indigo-500 focus:bg-white text-slate-900 transition-all shadow-sm placeholder-slate-400" placeholder={t('descPlaceholder')} value={workOrderNotes} onChange={e => setWorkOrderNotes(e.target.value)} />
+                                            </div>
+
+                                            <div className="space-y-4 pt-4 border-t-2 border-slate-100">
+                                                <div className="flex justify-between items-end mb-2">
+                                                    <div>
+                                                        <label className="text-sm font-black uppercase text-slate-800 tracking-widest block">{t('attachments')}</label>
+                                                        <p className="text-xs text-slate-500 font-bold mt-1">{t('fileLimitsInfo')}</p>
+                                                    </div>
+                                                    <span className={`text-xs font-black px-3 py-1.5 rounded-lg border-2 ${uploadedFiles.length >= MAX_FILES ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                                                        {uploadedFiles.length} / {MAX_FILES}
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <button type="button" disabled={uploadedFiles.length >= MAX_FILES} onClick={() => document.getElementById('workorder-file-input').click()} className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50 py-6 rounded-2xl text-[15px] font-black text-slate-600 hover:text-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <div className="bg-white p-3 rounded-full shadow-sm border border-slate-200"><Icons.File size={24} className="text-indigo-500"/></div>
+                                                        {t('uploadFile')}
+                                                    </button>
+                                                    <button type="button" disabled={uploadedFiles.length >= MAX_FILES} onClick={startCamera} className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50 py-6 rounded-2xl text-[15px] font-black text-slate-600 hover:text-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <div className="bg-white p-3 rounded-full shadow-sm border border-slate-200"><Icons.Camera size={24} className="text-emerald-500"/></div>
+                                                        {t('scanDoc')}
+                                                    </button>
+                                                </div>
+                                                <input id="workorder-file-input" type="file" multiple accept="image/*,application/pdf,video/mp4" className="hidden" onChange={handleFileChange} />
+                                                <input id="hidden-fallback-scan" type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                                            </div>
+
+                                            {uploadedFiles.length > 0 && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                                                    {uploadedFiles.map(file => {
+                                                        const isVideo = file.type?.includes('video') || (file.url && file.url.toLowerCase().includes('.mp4'));
+                                                        const isPdf = file.type?.includes('pdf') || (file.url && file.url.toLowerCase().includes('.pdf'));
+                                                        return (
+                                                            <div key={file.id} className="relative group bg-white border-2 border-slate-200 rounded-2xl p-2 flex items-center gap-3 shadow-sm hover:border-indigo-400 transition-colors">
+                                                                <div className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center cursor-pointer" onClick={() => setPreviewFile(file.url)}>
+                                                                    {(file.rawFile && file.type?.startsWith('image/')) || (file.isPreExisting && !isPdf && !isVideo) ? (
+                                                                        <img src={getSafeUrl(file.url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                                    ) : isVideo ? (
+                                                                        <Icons.Video size={24} className="text-indigo-500" />
+                                                                    ) : (
+                                                                        <Icons.File size={24} className="text-rose-500" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="min-w-0 flex-1 pr-8 cursor-pointer" onClick={() => setPreviewFile(file.url)}>
+                                                                    <p className="text-sm font-black text-slate-800 truncate">{file.name}</p>
+                                                                    <p className="text-xs text-slate-500 font-bold">{file.size || 'Server File'}</p>
+                                                                </div>
+                                                                <button type="button" onClick={() => removeFile(file.id)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white bg-slate-50 hover:bg-rose-500 rounded-lg transition-all border border-slate-200 hover:border-rose-500">
+                                                                    ✕
+                                                                </button>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-4 pt-6 border-t-2 border-slate-100">
+                                                {editingItemId && (
+                                                    <button type="button" onClick={() => { setEditingItemId(null); setWorkOrderTitle(""); setWorkOrderPrice(""); setWorkOrderNotes(""); setUploadedFiles([]); }} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black py-4 rounded-xl uppercase text-sm tracking-widest transition-colors border-2 border-slate-200 shadow-sm">
+                                                        {t('cancelEdit')}
+                                                    </button>
+                                                )}
+                                                <button type="button" onClick={saveItem} className={`flex-1 font-black py-4 rounded-xl uppercase text-sm tracking-widest shadow-xl transition-all text-white ${editingItemId ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/40' : 'bg-slate-900 hover:bg-black shadow-slate-900/30'}`}>
+                                                    {editingItemId ? t('updateOrder') : t('saveOrder')}
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-3">
-                                            <textarea className="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 text-xs resize-none" placeholder="Notes / Descriptions..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}/>
-                                            <button onClick={saveItem} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl uppercase tracking-wider text-xs shadow-md transition-colors">Save</button>
-                                        </div>
                                     </div>
-                                </div>
-
-                                <div className="space-y-3 pt-4">
-                                    {apartments.find(a => a.id === selectedId)?.items.map(item => (
-                                        <div key={item.id} className="border border-slate-100 bg-slate-50/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center gap-4">
-                                            <div className="flex gap-2 shrink-0">
-                                                {renderListThumbnail(item.productImage, <Icons.Image size={16}/>)}
-                                                {renderListThumbnail(item.invoiceImage, <Icons.File size={16}/>)}
-                                            </div>
-                                            <div className="flex-1 min-w-0 text-center sm:text-left">
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                                    <h4 className="font-black text-slate-800 text-sm truncate">{item.title}</h4>
-                                                    <select
-                                                        value={item.status || 'Todo'}
-                                                        onChange={(e) => updateItemStatus(item.id, e.target.value)}
-                                                        className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border outline-none cursor-pointer transition-colors ${getStatusBadgeClass(item.status || 'Todo')}`}
-                                                    >
-                                                        <option value="Todo">Todo</option>
-                                                        <option value="In Progress">In Progress</option>
-                                                        <option value="Complete">Complete</option>
-                                                    </select>
-                                                </div>
-                                                <p className="text-[10px] font-bold text-slate-400 mt-0.5">{item.date}</p>
-                                                {item.notes && <p className="text-xs text-slate-500 mt-1 bg-white p-2 rounded-lg border border-slate-100 inline-block">{item.notes}</p>}
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-lg font-black text-slate-800">${item.price}</span>
-                                                <button onClick={() => deleteItem(item.id)} className="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-white transition-colors"><Icons.Trash size={16}/></button>
-                                            </div>
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
                         )}
@@ -713,32 +1015,54 @@
                 </div>
 
                 {showCameraModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in">
-                        <div className="bg-white rounded-[2rem] overflow-hidden shadow-2xl max-w-lg w-full flex flex-col border border-slate-100">
-                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                <div>
-                                    <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
-                                        <Icons.Camera size={20} className="text-indigo-600"/> Document Live Scanner
-                                    </h3>
-                                    <p className="text-xs text-slate-400 font-bold">Position your receipt, warranty, or document clearly</p>
-                                </div>
-                                <button onClick={stopCamera} className="text-slate-400 hover:text-slate-600 font-bold text-sm bg-white border border-slate-200 w-8 h-8 rounded-full flex items-center justify-center shadow-xs">✕</button>
+                    <div className="fixed inset-0 glass-panel flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl border-2 border-slate-200 animate-in">
+                            <div className="p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
+                                <div><h3 className="font-black text-slate-900 text-xl flex items-center gap-3"><Icons.Camera size={22} className="text-indigo-600" /> {t('documentScanner')}</h3></div>
+                                <button onClick={stopCamera} className="text-slate-500 w-10 h-10 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center font-bold hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm">✕</button>
                             </div>
-                            <div className="bg-slate-950 relative aspect-[4/3] flex items-center justify-center">
+                            <div className="bg-black relative aspect-[4/3] flex items-center justify-center">
                                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover"></video>
-                                <div className="absolute inset-6 border-2 border-dashed border-white/40 pointer-events-none rounded-xl flex items-center justify-center">
-                                    <div className="text-white/40 font-bold text-[10px] uppercase tracking-wider bg-slate-900/60 px-3 py-1.5 rounded-md">Align document inside grid</div>
-                                </div>
                             </div>
-                            <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end">
-                                <button type="button" onClick={stopCamera} className="px-5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-black uppercase tracking-wider transition-colors">Cancel</button>
-                                <button type="button" onClick={capturePhoto} className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider shadow-md transition-colors flex items-center gap-2">
-                                    Capture & Scan
-                                </button>
+                            <div className="p-6 bg-slate-50 flex gap-4 justify-end border-t-2 border-slate-100">
+                                <button type="button" onClick={stopCamera} className="px-6 py-3.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 text-sm font-black uppercase hover:bg-slate-100 transition-colors shadow-sm">{t('cancel')}</button>
+                                <button type="button" onClick={capturePhoto} className="px-8 py-3.5 rounded-xl bg-indigo-600 text-white text-sm font-black uppercase shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 transition-colors">{t('takePhoto')}</button>
                             </div>
                         </div>
                     </div>
                 )}
+
+                {previewFile && (() => {
+                    const rawUrl = typeof previewFile === 'string' ? previewFile : previewFile.url;
+                    const previewUrl = getSafeUrl(rawUrl);
+                    const urlLower = previewUrl ? previewUrl.toLowerCase() : '';
+                    const isPdf = urlLower.includes('.pdf');
+                    const isVideo = urlLower.includes('.mp4') || urlLower.includes('.mov');
+
+                    return (
+                        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl flex items-center justify-center z-[100] p-4 sm:p-8 animate-in" onClick={() => setPreviewFile(null)}>
+                            <div className="relative bg-slate-800 rounded-[2rem] max-w-6xl w-full h-[90vh] p-3 overflow-hidden shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] border border-slate-700 flex flex-col" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center px-4 py-3 border-b border-slate-700 mb-2">
+                                    <h3 className="text-white font-bold tracking-widest uppercase text-sm flex items-center gap-2">
+                                        {isPdf ? <Icons.File size={16}/> : isVideo ? <Icons.Video size={16}/> : <Icons.Image size={16}/>}
+                                        {isPdf ? 'PDF Belgesi' : isVideo ? 'Video Kaydı' : 'Görsel Önizleme'}
+                                    </h3>
+                                    <button onClick={() => setPreviewFile(null)} className="bg-slate-700 hover:bg-rose-500 text-white font-bold w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg">✕</button>
+                                </div>
+
+                                <div className="w-full flex-1 overflow-hidden flex items-center justify-center bg-slate-900 rounded-2xl">
+                                    {isPdf ? (
+                                        <iframe src={previewUrl} className="w-full h-full rounded-xl" frameBorder="0"></iframe>
+                                    ) : isVideo ? (
+                                        <video controls autoPlay src={previewUrl} className="max-w-full max-h-full rounded-xl shadow-2xl bg-black outline-none"></video>
+                                    ) : (
+                                        <img src={previewUrl} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Preview Attachment" />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
         );
     };

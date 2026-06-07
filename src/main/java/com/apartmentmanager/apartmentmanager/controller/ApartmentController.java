@@ -4,14 +4,11 @@ import com.apartmentmanager.apartmentmanager.entity.Apartment;
 import com.apartmentmanager.apartmentmanager.entity.ApartmentItem;
 import com.apartmentmanager.apartmentmanager.repository.ApartmentItemRepository;
 import com.apartmentmanager.apartmentmanager.repository.ApartmentRepository;
-import com.apartmentmanager.apartmentmanager.service.S3Service;
+import com.apartmentmanager.apartmentmanager.service.S3StorageService;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -22,7 +19,7 @@ public class ApartmentController {
 
     private final ApartmentRepository apartmentRepository;
     private final ApartmentItemRepository itemRepository;
-    private final S3Service s3Service;
+    private final S3StorageService s3StorageService; // YENİ: S3 Servisini dahil ettik
 
     @GetMapping("/apartments")
     public List<Apartment> getAllApartments() {
@@ -34,57 +31,34 @@ public class ApartmentController {
         return apartmentRepository.save(apartment);
     }
 
+    // DAİRE SİLME: Önce S3'teki Daire klasörünü temizler, sonra Veritabanından siler
     @DeleteMapping("/apartments/{id}")
     public void deleteApartment(@PathVariable String id) {
-        apartmentRepository.deleteById(id);
+        apartmentRepository.findById(id).ifPresent(apartment -> {
+            s3StorageService.deleteApartmentFiles(apartment.getCommunity().getName(), id);
+            apartmentRepository.deleteById(id);
+        });
     }
 
-    @PostMapping("/apartments/{apartmentId}/items")
-    public ApartmentItem addItem(
-            @PathVariable String apartmentId,
-            @RequestParam String title,
-            @RequestParam String price,
-            @RequestParam String date,
-            @RequestParam String notes,
-            @RequestParam String status,
-
-            @RequestParam(required = false)
-            MultipartFile productImage,
-
-            @RequestParam(required = false)
-            MultipartFile invoiceImage
-
-    ) throws IOException {
-
-        Apartment apartment = apartmentRepository
-                .findById(apartmentId)
-                .orElseThrow();
-
-        ApartmentItem item = new ApartmentItem();
-
-        item.setTitle(title);
-        item.setPrice(price);
-        item.setDate(date);
-        item.setNotes(notes);
-        item.setStatus(status);
-
-        if (productImage != null) {
-            String productUrl = s3Service.uploadFile(productImage);
-            item.setProductImageUrl(productUrl);
-        }
-
-        if (invoiceImage != null) {
-            String invoiceUrl = s3Service.uploadFile(invoiceImage);
-            item.setInvoiceImageUrl(invoiceUrl);
-        }
-
-        item.setApartment(apartment);
-
-        return itemRepository.save(item);
-    }
-
+    // İŞ EMRİ SİLME: Sadece bu iş emrine ait dosyaları S3'ten bulur ve siler, sonra DB'yi temizler
     @DeleteMapping("/items/{id}")
     public void deleteItem(@PathVariable Long id) {
-        itemRepository.deleteById(id);
+        itemRepository.findById(id).ifPresent(item -> {
+            if (item.getAttachments() != null) {
+                for (String url : item.getAttachments()) {
+                    if (url.contains("key=")) {
+                        String key = url.substring(url.indexOf("key=") + 4);
+                        s3StorageService.deleteFileByKey(key);
+                    }
+                }
+            }
+            itemRepository.deleteById(id);
+        });
+    }
+
+    @GetMapping({"/favicon.ico", "favicon.ico"})
+    @ResponseBody
+    public void disableFavicon() {
+        // Suppresses the 404 error
     }
 }
