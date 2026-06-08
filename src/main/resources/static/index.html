@@ -565,22 +565,38 @@
         const selectedApartment = selectedCommunity?.apartments?.find(a => a.id === selectedApartmentId);
         const filteredCommunities = communities.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
 
+
         if (!isAuthenticated) {
             return (
-                <div className="min-h-screen flex flex-col justify-between p-4 bg-slate-950 relative overflow-hidden">
-                    <div className="flex justify-end p-2 z-50">
-                        <div className="bg-slate-900 p-1 rounded-xl flex gap-1 border border-slate-800">
+                // DİKKAT: bg-[url('...')] kısmına doğrudan internetten yüksek çözünürlüklü bir uzay görseli koyduk!
+                <div className="min-h-screen w-full bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center relative flex flex-col justify-between p-4 overflow-hidden">
+
+                    {/* KARANLIK FİLTRE (Görseli hafif karartıp, yazıları/kartı öne çıkarmak için) */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/50 via-black/40 to-black/60 backdrop-blur-sm z-0"></div>
+
+                    {/* Dil Seçeneği (Üst Sağ) - Z-index ile öne alıyoruz */}
+                    <div className="flex justify-end p-2 relative z-50">
+                        <div className="bg-slate-900/80 backdrop-blur p-1 rounded-xl flex gap-1 border border-slate-700">
                             <button onClick={() => changeLanguage('tr')} className={`px-4 py-2 rounded-lg text-sm font-black transition-colors ${lang === 'tr' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>TR</button>
                             <button onClick={() => changeLanguage('en')} className={`px-4 py-2 rounded-lg text-sm font-black transition-colors ${lang === 'en' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>EN</button>
                         </div>
+
                     </div>
-                    <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 text-center relative z-10 animate-in mx-auto my-auto border border-slate-200">
-                        <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/30"><Icons.Layout size={36} /></div>
+
+                    {/* SENİN BEYAZ KARTIN (Ortada) */}
+                    <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-10 text-center relative z-10 animate-in mx-auto my-auto border border-slate-200">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/30">
+                            <Icons.Layout size={36} />
+                        </div>
                         <h2 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{t('title')}</h2>
                         <p className="text-slate-600 font-bold text-sm px-4">Professional Premium Property Management</p>
-                        <button onClick={handleGoogleLogin} className="w-full mt-10 flex items-center justify-center gap-4 bg-slate-900 text-white font-extrabold text-lg py-5 rounded-2xl shadow-xl hover:bg-black hover:-translate-y-1 transition-all duration-300">{t('googleLogin')}</button>
+
+                        <button onClick={handleGoogleLogin} className="w-full mt-10 flex items-center justify-center gap-4 bg-slate-900 text-white font-extrabold text-lg py-5 rounded-2xl shadow-xl hover:bg-black hover:-translate-y-1 transition-all duration-300">
+                            {t('googleLogin')}
+                        </button>
                     </div>
-                    <div></div>
+
+                    <div className="relative z-10"></div>
                 </div>
             );
         }
