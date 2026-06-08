@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: apartment-manager
+    env: docker
+    plan: free
+    repo: https://github.com/myhelper65/Apartment-Management-s3.git
+    branch: main
+    envVars:
+      - key: DB_HOST
+        value: apartment-postgres.c8ygvlz8co9d.render.internal
+      - key: AWS_REGION
+        value: us-east-1
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: apartment-db
+          property: password
+      - key: AWS_ACCESS_KEY
+        sync: false
+      - key: AWS_SECRET_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+  - type: pserv
+    name: apartment-db
+    env: docker
+    plan: free
+    image:
+      fromRegistry:
+        url: docker.io/library/postgres:15-alpine
+    envVars:
+      - key: POSTGRES_DB
+        value: apartment_manager
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+    disk:
+      name: postgres_data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
