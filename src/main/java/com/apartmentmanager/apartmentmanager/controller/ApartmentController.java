@@ -40,17 +40,15 @@ public class ApartmentController {
         });
     }
 
-    // İŞ EMRİ SİLME: Sadece bu iş emrine ait dosyaları S3'ten bulur ve siler, sonra DB'yi temizler
     @DeleteMapping("/items/{id}")
     public void deleteItem(@PathVariable Long id) {
         itemRepository.findById(id).ifPresent(item -> {
-            if (item.getAttachments() != null) {
-                for (String url : item.getAttachments()) {
-                    if (url.contains("key=")) {
-                        String key = url.substring(url.indexOf("key=") + 4);
-                        s3StorageService.deleteFileByKey(key);
-                    }
-                }
+            String commName = item.getApartment().getCommunity().getName();
+            String aptId = item.getApartment().getId();
+
+            // Eğer String Work Order ID varsa o klasörü S3'ten sil!
+            if (item.getWorkOrderId() != null) {
+                s3StorageService.deleteWorkOrderFiles(commName, aptId, item.getWorkOrderId());
             }
             itemRepository.deleteById(id);
         });

@@ -3,8 +3,7 @@ package com.apartmentmanager.apartmentmanager.controller;
 import com.apartmentmanager.apartmentmanager.service.S3StorageService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 
 @RestController
+@CrossOrigin(origins = "*") // React ve Java farklı portlarda olduğu için CORS kalkanını indiriyoruz
 public class FileController {
 
     private final S3StorageService s3StorageService;
@@ -21,16 +21,13 @@ public class FileController {
     }
 
     @GetMapping("/api/files/preview")
-    public ResponseEntity<Void> previewFile(@RequestParam("key") String key, @AuthenticationPrincipal OAuth2User user) {
-        // GÜVENLİK DUVARI: Sadece Google ile giriş yapmış yetkili kullanıcılar görebilir!
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // S3'ten 15 dakikalık geçici link üret
+    public ResponseEntity<Void> previewFile(@RequestParam("key") String key) {
+        
+        // S3'ten 15 dakikalık geçici ve güvenli link üret
         String temporaryUrl = s3StorageService.generatePresignedUrl(key);
 
-        // Tarayıcıyı bu güvenli geçici linke yönlendir (Redirect 302)
+        // Tarayıcıyı AWS S3'ün orijinal ve güvenli linkine yönlendir (Redirect 302)
+        // Bu sayede PDF, PNG, MP4 ne olursa olsun tarayıcı kendi formatında açar!
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(temporaryUrl))
                 .build();

@@ -105,21 +105,17 @@
 
 package com.apartmentmanager.apartmentmanager.service;
 
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Object;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -154,33 +150,20 @@ public class S3StorageService {
     public String uploadApartmentDocument(String communityName, String apartmentId, String fileCategory, MultipartFile file) throws IOException {
 
         String folderCommunity = sanitizePath(communityName);
-
         String folderApartment = sanitizePath(apartmentId);
-
-
         String originalFileName = file.getOriginalFilename();
-
         String uniqueFileName = fileCategory + "_" + UUID.randomUUID() + "_" + originalFileName;
-
-
-// Structured path production: victory-lake/apt-a4/invoice_uuid_water-bill.pdf
-
         String s3Key = String.format("%s/%s/%s", folderCommunity, folderApartment, uniqueFileName);
-
-
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-
                 .bucket(bucketName)
-
                 .key(s3Key)
-
                 .contentType(file.getContentType())
 
                 .build();
 
-
-// Optimized payload streaming to S3 using input stream
-
+//
+//// Optimized payload streaming to S3 using input stream
+//
         s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
 
@@ -242,33 +225,27 @@ public class S3StorageService {
      */
     public String generatePresignedUrl(String objectKey) {
         try (S3Presigner presigner = S3Presigner.create()) {
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build();
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucketName).key(objectKey).build();
 
-            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                    .signatureDuration(Duration.ofMinutes(15)) // Link 15 dakika sonra kendini imha eder
-                    .getObjectRequest(getObjectRequest)
-                    .build();
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder().signatureDuration(Duration.ofMinutes(15)) // Link 15 dakika sonra kendini imha eder
+                    .getObjectRequest(getObjectRequest).build();
 
             return presigner.presignGetObject(presignRequest).url().toString();
         }
     }
+
     /**
      * Permanently deletes a file from the S3 bucket using its key
      */
     public void deleteFileByKey(String key) {
         try {
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .build();
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucketName).key(key).build();
             s3Client.deleteObject(deleteObjectRequest);
         } catch (Exception e) {
             System.err.println("Failed to delete file from S3: " + key);
         }
     }
+
     // 1. Sitenin tüm S3 klasörünü kökten siler (Site Silinince)
     public void deleteCommunityFiles(String communityName) {
         String prefix = sanitizePath(communityName) + "/";
@@ -284,10 +261,7 @@ public class S3StorageService {
     // Toplu silme işlemini yapan AWS mantığı
     private void deleteFilesByPrefix(String prefix) {
         try {
-            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                    .bucket(bucketName)
-                    .prefix(prefix)
-                    .build();
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
             ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
 
             for (S3Object s3Object : listResponse.contents()) {
@@ -297,5 +271,31 @@ public class S3StorageService {
             System.err.println("S3 Toplu Silme Başarısız: " + prefix);
         }
     }
-}
+
+
+    // ... Eski kodlarının altına bunları ekle ...
+
+    /**
+     * YENİ: Her iş emrine (Work Order) özel klasör oluşturarak S3'e yükleme yapar.
+     * Yol: communityName / apartmentId / workOrderId / unique_filename
+     */
+    // 1. Long yerine String workOrderId alıyoruz
+    public String uploadWorkOrderDocument(String communityName, String apartmentId, String workOrderId, String fileCategory, MultipartFile file) throws IOException {
+        String folderCommunity = sanitizePath(communityName);
+        String folderApartment = sanitizePath(apartmentId);
+        String uniqueFileName = fileCategory + "_" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+        // S3 Yolu: /site/daire/WI-ABD-R476-234/dosya.png
+        String s3Key = String.format("%s/%s/%s/%s", folderCommunity, folderApartment, workOrderId, uniqueFileName);
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucketName).key(s3Key).contentType(file.getContentType()).build();
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        return s3Key;
+    }
+
+    // 2. Long yerine String workOrderId alıyoruz
+    public void deleteWorkOrderFiles(String communityName, String apartmentId, String workOrderId) {
+        String prefix = String.format("%s/%s/%s/", sanitizePath(communityName), sanitizePath(apartmentId), workOrderId);
+        deleteFilesByPrefix(prefix);
+    }}
 
