@@ -130,7 +130,7 @@ export default function App() {
 
    useEffect(() => {
            // 1. OTURUM KONTROLÜ
-           fetch('http://localhost:8080/api/auth/me', {
+           fetch('/api/auth/me', {
                method: 'GET',
                credentials: 'include'
            })
@@ -178,7 +178,7 @@ export default function App() {
         }
 
         // Eğer veritabanından gelen bir S3 dosyası ise doğrudan Java (8080) backend'e istek atıp sekmede aç:
-        window.open('http://localhost:8080' + safeUrl, '_blank');
+        window.open('/' + safeUrl, '_blank');
     };
 
     const handleAddCommunity = async (e) => {
@@ -325,6 +325,38 @@ export default function App() {
         }, 800);
     };
 
+   const handleLogout = () => {
+        // 1. Immediately wipe local auth state so the UI cannot bounce back
+        //    to the logged-in screen while the network request is in-flight.
+        sessionStorage.clear();
+        setIsAuthenticated(false);
+        setCommunities([]);
+
+        // 2. Tell Spring Security to destroy the server-side session.
+        //    Using a relative URL means Vite proxy (or Nginx in prod) routes
+        //    it to port 8080 — avoiding any CORS preflight issue.
+        fetch("/logout", {
+            method: "POST",
+            credentials: "include",   // CRITICAL: sends the JSESSIONID cookie
+        })
+        .then((response) => {
+            // Spring returns 200 OK (configured in SecurityConfig).
+            // 302 redirects are followed silently by fetch, so .ok covers both.
+            if (!response.ok) {
+                console.error("[Logout] Server rejected the logout request. Status:", response.status);
+            }
+        })
+        .catch((err) => {
+            // Network or CORS error — session is already cleared locally above,
+            // so the user is effectively logged out on the client side.
+            console.error("[Logout] Network error during logout:", err);
+        })
+        .finally(() => {
+            // Hard redirect to root AFTER the fetch settles so the browser
+            // does not race between /api/auth/me and the redirect.
+            window.location.replace("/");
+        });
+    };
     const selectedCommunity = communities.find(c => c.id === selectedCommunityId);
     const selectedApartment = selectedCommunity?.apartments?.find(a => a.id === selectedApartmentId);
     const filteredCommunities = communities.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
@@ -340,7 +372,7 @@ export default function App() {
 
                 {/* DOĞRU YERLEŞTİRİLMİŞ LOGIN LİNKİ */}
                 <a
-                    href="http://localhost:8080/oauth2/authorization/google"
+                    href="/oauth2/authorization/google"
                     className="w-full bg-blue-800 hover:bg-blue-900 text-white py-4 rounded-xl font-semibold text-lg transition-colors shadow-lg text-center flex items-center justify-center cursor-pointer block"
                 >
                     {t('googleLogin')}
@@ -363,14 +395,12 @@ export default function App() {
                             <option value="en">English</option><option value="tr">Türkçe</option>
                         </select>
 
-                        {/* DOĞRU YERLEŞTİRİLMİŞ LOGOUT LİNKİ */}
-                        <a
-                            href="http://localhost:8080/api/logout"
-                            onClick={() => sessionStorage.removeItem('isAuthSession')}
-                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors cursor-pointer"
-                        >
-                            {t('logout') || 'Çıkış Yap'}
-                        </a>
+                        {/* FETCH KULLANAN YENİ GÜVENLİ ÇIKIŞ BUTONU */}
+                          <button
+                              onClick={handleLogout}
+                              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors cursor-pointer" >
+                               {t('logout') || 'Çıkış Yap'}
+                          </button>
                     </div>
                 </div>
             </header>
