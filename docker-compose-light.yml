@@ -1,39 +1,122 @@
 version: '3.8'
 
 services:
+  # 1. VERİTABANI
   db:
     image: postgres:15-alpine
     container_name: apartment-postgres-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: apartment_manager
+      POSTGRES_DB: apartmentmanager
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d apartment_manager"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d apartmentmanager"]
+      interval: 10s
+      timeout: 5s
       retries: 5
 
+  # 2. JAVA BACKEND
   app:
     build: .
     container_name: apartment-manager-app
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     environment:
-      DB_HOST: db
-      AWS_REGION: us-east-1
-      DB_PASSWORD: ${DB_PASSWORD}
-      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
-      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/apartmentmanager
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      # NGINX sayesinde frontend adresimiz artık doğrudan localhost'un kendisidir:
+      - APP_FRONTEND_URL=http://localhost
+
+  # 3. REACT FRONTEND + NGINX (YENİ EKLENDİ)
+  frontend:
+    build:
+      context: ./property-manager # Dockerfile'ın olduğu klasörü gösterir
+    container_name: apartment-manager-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80" # Artık uygulamamıza 5175'ten değil, doğrudan portsuz (80) gireceğiz
+    depends_on:
+      - app # Backend ayağa kalkmadan frontend başlamaz
 
 volumes:
   postgres_data:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#services:
+#  db:
+#    image: postgres:15-alpine
+#    container_name: apartment-postgres-db
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_DB: apartmentmanager
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: ${DB_PASSWORD} # HATA BURADAYDI, DÜZELTİLDİ!
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U postgres -d apartmentmanager"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#
+#  app:
+#    build: .
+#    container_name: apartment-manager-app
+#    restart: unless-stopped
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 1G
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=prod
+#      # JDBC URL'i doğrudan buradan veriyoruz, hata şansını sıfıra indiriyoruz:
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/apartmentmanager
+#      - SPRING_DATASOURCE_USERNAME=postgres
+#      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+#      - AWS_REGION=us-east-1
+#      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+#      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+#      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+#      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+#      - APP_FRONTEND_URL=${APP_FRONTEND_URL}
+#
+#volumes:
+#  postgres_data:
